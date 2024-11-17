@@ -116,7 +116,23 @@ class Sudoku:
                 name = f"R{row_index+1}C{col_index+1}#{number}"
                 node = self.Node(row_index+1, col_index+1, number, name)
                 self.make_move(node)
-  
+
+    def board_to_moves(self, board):
+        moves = []
+        for row_index, row in enumerate(board):
+            for col_index, char in enumerate(row):
+                if not char.isdigit():
+                    continue
+                number = int(char)
+
+                name = f"R{row_index + 1}C{col_index + 1}#{number}"
+                node = self.Node(row_index + 1, col_index + 1, number, name)
+                moves.append(node)
+                #move = self.Move(chosen_node, unsatisfied_constraint, unsatisfied_constraints)
+        # given a set of possibilities, and a move, I can find a row/move
+        # so emit a list of moves for playing
+        return moves
+
     def print_setup(self):
         self.print_solution([])
 
@@ -159,9 +175,7 @@ class Sudoku:
             print(row)
 
         
-    def solve_puzzle(self):
-        solution = []
-
+    def solve_puzzle(self, solution = []):
         self.solutions.append(solution)
         self.solved = False
         
