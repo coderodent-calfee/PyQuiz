@@ -32,28 +32,79 @@ class DancingLinks:
         self.header.down = self.header  
         self.header.up = self.header
         self.columns = []  # List of column headers (for easier access)
-        self.sorted_columns = []  # List of column headers (for easier access)
+        self.columns_by_size = {}
         self.debug = False
         
+    def debug_show_column_stats(self):
+        print("debug_show_column_stats")
+        uncovered_columns = []
+        current_column = self.header.left
+        while current_column != self.header:
+            uncovered_columns.append(current_column)
+            current_column = current_column.left
+        total_uncovered_columns_left = len(uncovered_columns)
 
-    def get_size(self, item):
-        return item.size
 
-    def add_sorted_column(self, column):
-        if len(self.sorted_columns) == 0:
-            self.sorted_columns.append(column)
-            return
-        position = bisect.bisect_left([self.get_size(column) for col in self.sorted_columns], column.size)
-        self.sorted_columns.insert(position, column)       
+        max_size_column = max(uncovered_columns, key=lambda item: item.size)
+        
+        
+        columns_by_size = {i: [] for i in range(max_size_column.size, -1, -1)}
+        for column in uncovered_columns:
+            columns_by_size[column.size].append(column)
+        for size, columns in columns_by_size.items():
+            print(f"size: {size}:", end="")
+            for column in columns:
+                print(f" {column.name}", end="")
+            print()
+            
+        print()
+        
 
-    # Remove an item from the sorted list
-    def remove_sorted_column(self, column):
-        try:
-            self.sorted_columns.remove(column)
-        except ValueError:
-            print(f"Item {column.name} not found in the list.")
-        return column
 
+    def sort_columns_by_size(self):
+        uncovered_columns = []
+        current_column = self.header.left
+        max_size_column = current_column
+        min_size_column = current_column
+        while current_column != self.header:
+            uncovered_columns.append(current_column)
+            if max_size_column.size < current_column.size:
+                max_size_column = current_column
+            if min_size_column.size > current_column.size:
+                min_size_column = current_column
+            current_column = current_column.left
+        total_uncovered_columns_left = len(uncovered_columns)
+        
+        columns_by_size = {i: [] for i in range(max_size_column.size, -1, -1)}
+        for column in uncovered_columns:
+            columns_by_size[column.size].append(column)
+
+        self.columns_by_size = columns_by_size
+        self.print_columns_by_size()
+
+    def get_ordered_uncovered(self):
+        ordered_uncovered = []
+        for size in self.columns_by_size.keys():
+            ordered_uncovered += self.columns_by_size[size]
+        return ordered_uncovered
+
+    def print_columns_by_size(self):
+        columns_by_size = self.columns_by_size
+        print("columns_by_size")
+        for size, columns in columns_by_size.items():
+            print(f"size: {size}:", end="")
+            if size <= 2:
+                for column in columns:
+                    print(f" {column.name}", end="")
+                    node = column.down
+                    while node != column:
+                        print(f"({node.data.name})", end="")
+                        node = node.down
+            else:
+                for column in columns:
+                    print(f" {column.name}", end="")
+            print()
+        
     # Add a new column header to the Dancing Links structure
     def add_column(self, name):
         old_column = self.find_column_header(name)
@@ -70,7 +121,6 @@ class DancingLinks:
         new_column.down = new_column  
         new_column.up = new_column
         
-        self.add_sorted_column(new_column)
         self.check_columns()
         
         return new_column
@@ -115,68 +165,38 @@ class DancingLinks:
             if rows_in_column != current_column.size:
                 print(f"in column {current_column.name} found {rows_in_column} rows and has size {current_column.size}")
     
-        column_size = -1
-        for column in self.sorted_columns:
-            if column.covered:
-                print(f" column {column.name} is in the sorted list and is COVERED ")
-            if column.size > column_size: # should be increasing
-                column_size = column_size
-            elif column.size < column_size:
-                print(f" column {column.name} has size {column.size} and is not sorted correctly (prev is {column_size})")
                 
-
-
-
-    def update_sorted_column_size(self, column_header):
-        self.remove_sorted_column(column_header)
-        self.add_sorted_column(column_header)
-        
     
     def increment_column_size(self, column_header):
         column_header.size += 1
-        self.update_sorted_column_size(column_header)
 
     def decrement_column_size(self, column_header):
         column_header.size -= 1
-        self.update_sorted_column_size(column_header)
         
-
+    # find column in list (use covered flag)
     def find_column_header(self, column_name):
         found = [index for index, column in enumerate(self.columns) if column.name == column_name]
         if len(found) > 0:
             return self.columns[found[0]]
         return None
     
-    # def find_row_node(self, column_name, row_name):
-    #     starting_column = self.find_column_header(column_name)
-    #     current_node = starting_column.down
-    #     # while current_node != starting_column:
-    #     #     if current_node.data.row == row:
-    #     #         # Note: this technically should not happen; only one solution per node
-    #     #         # Todo: send up an error instead
-    #     #         return current_node
-    #     #     current_node = current_node.down
-
-    #     current_column = starting_column.right
-    #     while current_column != starting_column:
-    #         current_node = current_column.down
-    #         while current_node != current_column:
-    #             if current_node.data.name == row_name:
-    #                 return current_node
-    #             current_node = current_node.down
-    #         current_column = current_column.right 
-    #     return None
+    # find column in linked list (uncovered only)
+    def find_uncovered_column_header(self, column_name):
+        current_column = self.header.right
+        while current_column != self.header:
+            if current_column.name == column_name:
+                return current_column
+            current_column = current_column.right
+        return None
       
-    def find_row_node(self, row_name):
-        # Start from any column and search all columns for a node with the row_name
-        column_header = self.header.right
-        while column_header != self.header:
-            current_node = column_header.down
-            while current_node != column_header:
-                if current_node.data.name == row_name:  # Match on row name
-                    return current_node  # Found the node in the row
-                current_node = current_node.down
-            column_header = column_header.right
+    def find_row_header(self, row_name):
+        # Search all columns for a node with the row_name
+        row_header = self.header.down
+        while row_header != self.header:
+            if row_header.name == row_name:
+                return row_header
+            row_header = row_header.down
+            
         return None  # Row node with the given name not found
 
 
@@ -196,7 +216,6 @@ class DancingLinks:
             data =  namedtuple('Node', ['row', 'column', 'number', 'name'])
             data.name = row_name
             
-        row_node = self.find_row_node(name)
 
         new_node = DancingLinkNode(data)
         new_node.column = column_header
@@ -206,22 +225,42 @@ class DancingLinks:
         column_header.up.down = new_node
         column_header.up = new_node
         
-        # Link the node into the row
-        if row_node:
-            # print(f"found row {name}")
-            new_node.left = row_node.left
-            new_node.right = row_node
-            row_node.left.right = new_node
-            row_node.left = new_node
-        else:
-            new_node.left = new_node
-            new_node.right = new_node
+        self.insert_into_row(new_node)
             
         self.increment_column_size(column_header)
         self.check_columns()
         return new_node
+    
+    def insert_into_row(self, new_node):
+        name  =  new_node.data.name
+        # Todo: improve find_row_node (maybe put a header on it)
+        row_node = self.find_row_header(name)
 
-    # Example of covering a column (removing it from the grid temporarily)
+        if row_node == None:
+            row_node = self.add_row_header(new_node.data)
+        
+        # print(f"found row {name}")
+        new_node.left = row_node.left
+        new_node.right = row_node
+        row_node.left.right = new_node
+        row_node.left = new_node
+            
+    def add_row_header(self, data):
+        row_name =data.name
+        new_header = DancingLinkNode(data)
+        new_header.name = row_name
+        new_header.right = new_header
+        new_header.left = new_header
+
+        # Link into row header list (below the matrix header)
+        new_header.down = self.header.down
+        new_header.up = self.header
+        self.header.down.up = new_header
+        self.header.down = new_header
+
+        return new_header
+
+    # Cover a column (removing it from the grid temporarily)
     def cover_column(self, column_header):
         if column_header == self.header:
             print("AURGH!")
@@ -231,8 +270,6 @@ class DancingLinks:
         column_header.right.left = column_header.left
         column_header.left.right = column_header.right
         
-        column_header.covered_constraints = set()
-        column_header.covered_constraints.add(column_header.name)
         # Remove all rows in this column (cover the column)
         row_node = column_header.down
         while row_node != column_header:
@@ -240,24 +277,24 @@ class DancingLinks:
             while right_node != row_node:
                 right_node.up.down = right_node.down
                 right_node.down.up = right_node.up
-                self.decrement_column_size(right_node.column)
-                column_header.covered_constraints.add(right_node.column.name)
+                if right_node.column != None:
+                    self.decrement_column_size(right_node.column)
                 right_node = right_node.right
             row_node = row_node.down
-        self.remove_sorted_column(column_header)
         self.check_columns()
         return column_header
 
 
 
-    # Example of uncovering a column (putting it back into the grid)
+    # Uncovering a column (putting it back into the grid)
     def uncover_column(self, column_header):
         self.check_columns()
         row_node = column_header.up
         while row_node != column_header:
             left_node = row_node.left
             while left_node != row_node:
-                self.increment_column_size(left_node.column)
+                if left_node.column != None:
+                    self.increment_column_size(left_node.column)
                 left_node.up.down = left_node
                 left_node.down.up = left_node
                 left_node = left_node.left
@@ -265,7 +302,6 @@ class DancingLinks:
         column_header.right.left = column_header
         column_header.left.right = column_header
         column_header.covered = False
-        self.add_sorted_column(column_header)
         self.check_columns()
         return column_header
 
@@ -323,7 +359,7 @@ class DancingLinks:
         for row_name in row_names:
             covered = False
             # Find the first node for the row
-            row_node = self.find_row_node(row_name)
+            row_node = self.find_row_header(row_name)
             if row_node is None:
                 for current_column in self.columns:
                     current_node = current_column.down
@@ -366,7 +402,6 @@ class DancingLinks:
         return self.print_normal()
 
     def print_all(self):
-        # Step 1: Collect all distinct row names
         row_name_set = set()  # Use a set to ensure unique row names
     
         # Traverse all columns and add all row names to the set
@@ -419,7 +454,7 @@ class DancingLinks:
         for row_name in row_names:
             covered = False
             # Find the first node for the row
-            row_node = self.find_row_node(row_name)
+            row_node = self.find_row_header(row_name)
             if row_node is None:
                 for current_column in self.columns:
                     current_node = current_column.down
@@ -500,7 +535,7 @@ class DancingLinks:
         # Step 3: Iterate over all row names and print their respective nodes
         for row_name in row_names:
             # Find the first node for the row
-            row_node = self.find_row_node(row_name)
+            row_node = self.find_row_header(row_name)
             if row_node is None:
                 continue  # If there's no node for this row, skip
         
@@ -571,7 +606,6 @@ def test2():
     column_number_name = "C{}#{}"
     N = 2
     Node = namedtuple('SudokuNode', ['row', 'column', 'number', 'name'])
-    #    self.Move = namedtuple('SudokuMove', ['node', 'column'])
 
         
     possibilities = DancingLinks()
@@ -634,7 +668,7 @@ def test2():
 def main():
     # Code to execute
     print("Running DancingLinks main function...")
-    #test1()
+    test1()
     test2()
     
 
