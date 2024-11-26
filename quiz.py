@@ -1,6 +1,6 @@
 from deckOfCards import DeckOfCards
 from sudoku import Sudoku
-
+import cProfile
 
 
 
@@ -219,7 +219,31 @@ def main():
     moves = sudoku.board_to_moves(solution_moves)
     
     sudoku.solve_puzzle(solution, moves )
+
+
+def profile_challenge_1():
+    # Challenge 1 from Sudoku Solver by Logic
+    board = [
+        [".", "2", ".", ".", ".", ".", ".", ".", "."],
+        [".", ".", ".", "6", ".", ".", ".", ".", "3"],
+        [".", "7", "4", ".", "8", ".", ".", ".", "."],
+        [".", ".", ".", ".", ".", "3", ".", ".", "2"],
+        [".", "8", ".", ".", "4", ".", ".", "1", "."],
+        ["6", ".", ".", "5", ".", ".", ".", ".", "."],
+        [".", ".", ".", ".", "1", ".", "7", "8", "."],
+        ["5", ".", ".", ".", ".", "9", ".", ".", "."],
+        [".", ".", ".", ".", ".", ".", ".", "4", "."],
+    ]
+
+    sudoku = Sudoku(board)
+    sudoku.setup_puzzle()
+    sudoku.solve_puzzle()    
+    pass
     
 if __name__ == "__main__":
-    main()
+#    main()
+
+    # todo: strategies are taking too much time after they are needed: maybe set up a 'remove' conditional that can be used after the move is confirmed
+    # or... set up a 'paper' grid of allowed/disallowed moves in a cell and the strategies don't stay around at all    
+    cProfile.run("profile_challenge_1()", sort="time")
 

@@ -232,8 +232,8 @@ class Sudoku:
         
             current_strategies = self.get_current_strategies()
             self.starting_strategies.update(set(current_strategies))
-            for strategy in list(self.starting_strategies):
-                print(f"starting_strategy {strategy.name}")
+            # for strategy in list(self.starting_strategies):
+            #     print(f"starting_strategy {strategy.name}")
 
             self.print_setup(self.current_strategies)
 
@@ -882,7 +882,7 @@ class Sudoku:
         # for move in solution:
         #     print(f"Move {move.node.data.name} {move.column.name} ")
         #        possibilities.print()
-        self.print_moves_and_solution(solution, self.current_strategies)
+        # self.print_moves_and_solution(solution, self.current_strategies)
         self.solutions.append(solution)
 
     def make_move(self, move):
