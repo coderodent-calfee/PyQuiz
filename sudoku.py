@@ -219,21 +219,23 @@ class Sudoku:
                 move = self.Move(DancingLinkNode(node), None, None, set())
                 spaces_on_board -= 1
                 self.make_move(move)
-        self.possibilities.debug_show_column_stats()
 
         possibilities = self.possibilities
-        # sort on start
-        possibilities.sort_columns_by_size()
-
         self.starting_strategies = set()
         self.current_strategies = set()
-        
-        current_strategies = self.get_current_strategies()
-        self.starting_strategies.update(set(current_strategies))
-        for strategy in list(self.starting_strategies):
-            print(f"starting_strategy {strategy.name}")
 
-        self.print_setup(self.current_strategies)
+        # sort on start
+        if self.N == 9:
+            self.possibilities.debug_show_column_stats()
+            possibilities.sort_columns_by_size()
+
+        
+            current_strategies = self.get_current_strategies()
+            self.starting_strategies.update(set(current_strategies))
+            for strategy in list(self.starting_strategies):
+                print(f"starting_strategy {strategy.name}")
+
+            self.print_setup(self.current_strategies)
 
         self.moves_left = spaces_on_board
         print(
@@ -241,8 +243,6 @@ class Sudoku:
         )
 
     def get_counts_for_moves_left(self, strategies):
-        if not self.box_enabled:
-            return None, None, None
         # cell_candidates = [[[[] for _ in range(self.N)] for _ in range(self.N)] for _ in range(self.N)]
         # box_candidates = [[[[] for _ in range(self.box_size)] for _ in range(self.box_size)] for _ in range(self.N)]
         col_count = [[[] for _ in range(self.N)] for _ in range(self.N)]
@@ -255,14 +255,21 @@ class Sudoku:
             row = move.data.row
             col = move.data.column
             number = move.data.number
-            box = self.get_box(row, col)
 
             if all([strategy.test(move.data) for strategy in strategies]):
                 row_count[row - 1][number - 1].append((row, col))
                 col_count[col - 1][number - 1].append((row, col))
-                box_count[box - 1][number - 1].append((row, col))
             else:
                 rejected.append((row, col))
+                
+            if self.box_enabled:
+                box = self.get_box(row, col)
+                if all([strategy.test(move.data) for strategy in strategies]):
+                    box_count[box - 1][number - 1].append((row, col))
+                else:
+                    rejected.append((row, col))
+
+
         return row_count, col_count, box_count, set(rejected)
     
     def get_current_strategies(self):
@@ -415,8 +422,8 @@ class Sudoku:
                     if any(elem in candidate for elem in numbers):
                         good = False
                 if good:
-                    name = f"Naked pair {numbers} can only be in {number_pair[0]} "
-                    print(name)
+                    name = f"Naked pair {numbers} can only be in {number_pair[0]}"
+                    #print(name)
                     strategy = SudokuStrategy(
                         name,
                         lambda data, n0=numbers[0], n1=numbers[1], c0=number_pair[0][0], c1=number_pair[0][1]: (
@@ -510,10 +517,6 @@ class Sudoku:
         if len(candidates) < 3: 
             # Y_wing needs three coords: pivot and two pincers
             return set()
-        if (1,1) in candidates:
-            if (1,5) in candidates:
-                if (3,6) in candidates:
-                    print()
 
         def cell_sees_cell(a, b):
             x, y, = a
@@ -545,12 +548,12 @@ class Sudoku:
         # Step 2: Iterate through potential pivots
         pivot_pincers = []
         for pivot, pivot_numbers in candidates.items():
-            print(f"Y_wing {pivot}: {pivot_numbers}")
+            # print(f"Y_wing {pivot}: {pivot_numbers}")
             pincer_candidates = get_pincer_candidates(pivot, pivot_numbers, candidates)
             if len(pincer_candidates) < 2:
                 continue
-            print(f"pivot: {pivot}:{pivot_numbers} pincers:{pincer_candidates}")
-            print()
+            # print(f"pivot: {pivot}:{pivot_numbers} pincers:{pincer_candidates}")
+            # print()
             pincer_candidate_coords = list(pincer_candidates.keys())
             key_count = len(pincer_candidate_coords)
 
@@ -581,16 +584,16 @@ class Sudoku:
             return number != z or not cell_sees_cell(c0, cell) or not cell_sees_cell(c1, cell)
 
         if len(pivot_pincers) > 0:
-            print(f"pivot_pincers: {pivot_pincers}")
+            # print(f"pivot_pincers: {pivot_pincers}")
             for y_wing in pivot_pincers:
                 for pivot, pivot_pincer_pair in y_wing.items():
                     z_list = [n for n in candidates[pivot_pincer_pair[0]] if n in candidates[pivot_pincer_pair[1]]]
-                    print(f"pivot: {pivot} {candidates[pivot]} Z:{z_list[0]}")
-                    print(f"\t pincer1:{pivot_pincer_pair[0]}  {candidates[pivot_pincer_pair[0]]}")
-                    print(f"\t pincer2:{pivot_pincer_pair[1]}  {candidates[pivot_pincer_pair[1]]}")
+                    # print(f"pivot: {pivot} {candidates[pivot]} Z:{z_list[0]}")
+                    # print(f"\t pincer1:{pivot_pincer_pair[0]}  {candidates[pivot_pincer_pair[0]]}")
+                    # print(f"\t pincer2:{pivot_pincer_pair[1]}  {candidates[pivot_pincer_pair[1]]}")
                     
                     name = f"Y-Wing (XY-Wing) pivot: {pivot} pincers: {pivot_pincer_pair}"
-                    print(name)
+                    #print(name)
                     strategy = SudokuStrategy(
                         name,
                         lambda data, c0=pivot_pincer_pair[0], c1=pivot_pincer_pair[1], z=z_list[0]: (
@@ -602,6 +605,9 @@ class Sudoku:
 
 
     def debug_print_cells(self, solution, strategies=set()):
+        if self.N != 9:
+            return
+
         row_count, col_count, box_count, rejected = self.get_counts_for_moves_left(strategies)
         board, _, _ = self.solution_to_board(solution)
         print("    " + "   ".join(str(i) for i in range(1, 10)))
@@ -667,7 +673,7 @@ class Sudoku:
                 moves.append(node)
         return moves
 
-    def print_setup(self, strategies=None):
+    def print_setup(self, strategies=set()):
         board, blanks, errors = self.solution_to_board([])
 
         self.print_solution_from_board(board, [])
@@ -675,12 +681,12 @@ class Sudoku:
 
     def print_moves_and_solution(self, solution, strategies=set()):
         board, blanks, errors = self.solution_to_board(solution)
-        self.print_moves(solution)
-        for i in range(len(solution), self.moves_left):
-            print(f"Move {i:10}:  ")
+        # self.print_moves(solution)
+        # for i in range(len(solution), self.moves_left):
+        #     print(f"Move {i:10}:  ")
 
         self.print_solution_from_board(board, solution)
-        self.debug_print_cells(solution, strategies)
+        # self.debug_print_cells(solution, strategies)
 
     def solution_to_board(self, solution):
         errors = []
@@ -860,8 +866,8 @@ class Sudoku:
             if move_ok:
                 solution.append(move)
                 current_strategies = self.get_current_strategies()
-                for strategy in sorted(list(current_strategies)):
-                    print(f"current_strategies {strategy.name}")
+                # for strategy in sorted(list(current_strategies)):
+                #     print(f"current_strategies {strategy.name}")
                 if self.debug_solution_moves  != None:
                     for data in self.debug_solution_moves:
                         if not all([strategy.test(data) for strategy in self.starting_strategies]):

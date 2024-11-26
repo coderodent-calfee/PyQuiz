@@ -51,6 +51,7 @@ class DancingLinks:
 
 
     def debug_show_column_stats(self):
+        
         print("debug_show_column_stats")
         uncovered_columns = list(self.uncovered_columns())
 
