@@ -2,21 +2,21 @@ from deckOfCards import DeckOfCards
 from sudoku import Sudoku
 import cProfile
 
-
-
 def main():
-    # Code to execute
     print("Running main quiz function...")
     print("Hello, World!")
+    deck = DeckOfCards(9)
+    deck.print_len()
+
+    card = deck.pull_random_card()
+    print(f"Pulled a {card}")
+    deck.print_len()
+    deck.print_deck()
+
+def sudoku():
+    # Code to execute
 
 
-    # deck = DeckOfCards(9)
-    # deck.print_len()
-
-    # card = deck.pull_random_card()
-    # print(f"Pulled a {card}")
-    # deck.print_len()
-    # deck.print_deck()
 
     board = [[".","."],[".","."]]
     print( "======== set up board ========" )
@@ -245,5 +245,5 @@ if __name__ == "__main__":
 
     # todo: strategies are taking too much time after they are needed: maybe set up a 'remove' conditional that can be used after the move is confirmed
     # or... set up a 'paper' grid of allowed/disallowed moves in a cell and the strategies don't stay around at all    
-    cProfile.run("profile_challenge_1()", sort="time")
+    # cProfile.run("profile_challenge_1()", sort="time")
 

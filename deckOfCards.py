@@ -6,6 +6,12 @@ class DeckOfCards:
     def __init__(self, deckSize):
         self.deck = list(range(deckSize))  # Creates a list from 0 to N
 
+    @classmethod
+    def from_list(deck_of_cards, list):
+        deck = deck_of_cards(len(list))
+        deck.deck = list
+        return deck
+
     def print_len(self):
         print(f"this deck has {len(self.deck)} cards left.")
 
@@ -36,6 +42,21 @@ class DeckOfCards:
 def main():
     # Code to execute
     print("Running DeckOfCards main function...")
+    deck = DeckOfCards(9)
+    deck.print_len()
+    
+    card = deck.pull_random_card()
+    print(f"Pulled a {card}")
+    deck.print_len()
+    deck.print_deck()
+    
+    deck = DeckOfCards.from_list([(x, y) for x in range(5) for y in range(5)])
+    deck.print_len()
+    deck.print_deck()
+    card = deck.pull_random_card()
+    print(f"Pulled a {card}")
+    deck.print_len()
+    deck.print_deck()
 
 if __name__ == "__main__":
     main()
